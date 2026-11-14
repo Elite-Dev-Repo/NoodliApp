@@ -1,3 +1,12 @@
+import warnings
+
+# Suppress the blessed terminal capability warnings
+warnings.filterwarnings(
+    "ignore",
+    message="unknown terminal capability",
+    category=UserWarning,
+)
+
 import requests
 import win32gui
 import psutil
@@ -13,7 +22,7 @@ from blessed import Terminal
 from pyfiglet import Figlet
 
 
-isTracking =льше = False  # Keep your existing variables below
+isTracking = False
 
 # Ensure a safe, writable app directory in the user's home folder
 USER_HOME = os.path.expanduser("~")
@@ -28,7 +37,6 @@ REFRESH_URL = 'https://noodlibackend.onrender.com/api/token/refresh/'
 VERIFY_URL = 'https://noodlibackend.onrender.com/api/token/verify/'
 
 term = Terminal()
-
 
 
 #   Only this session's usage lives here. The file is the source of truth for
@@ -146,18 +154,26 @@ def upload_to_cloud():
             data = json.load(file)
     except (FileNotFoundError, json.JSONDecodeError):
         data = []
+        
     try:
         jwt = load_token()
         if not jwt:
             print("No access token found. Please log in first.")
             return
 
+        # Run the sync animation for 3 cycles cleanly
+        for i in range(1, 4):
+            print(term.clear_eol + f"\r{term.reverse('Syncing' + '.' * i)}", end="", flush=True)
+            time.sleep(0.5)
+        print(term.normal)
+
         res = requests.post(
             'https://noodlibackend.onrender.com/api/sessions/',
             json=data,
             headers={
                 'Authorization': f"Bearer {jwt}",
-            }
+            },
+            timeout=10
         )
 
         print(res)
